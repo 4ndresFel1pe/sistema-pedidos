@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LISTOP</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="img/aa.png">
+  <style>
+    @font-face {
+      font-family: 'Hunters';
+      src: url('fonts/Hunters.otf') format('opentype');
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Mogilte';
+      src: url('fonts/Mogilte.otf') format('opentype');
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Keep Calm Medium';
+      src: url('fonts/KeepCalm-Medium.ttf') format('truetype');
+      font-display: swap;
+    }
+
+    /* --- Estilos añadidos para sección de artículos y carrito --- */
+    .articulos-section {
+      margin-top: 18px;
+      display: none;
+      opacity: 0;
+      transition: opacity .35s ease-in-out;
+    }
+    .articulos-section.show {
+      display: block;
+      opacity: 1;
+    }
+
+    .articulos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 12px;
+    }
+
+    .articulo-card {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      text-align: left;
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: fadeInUp .45s forwards;
+    }
+    .articulo-card img {
+      width: 100%;
+      height: 130px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: #f3f3f3;
+    }
+    .articulo-card h3 {
+      margin: 6px 0 4px;
+      font-size: 1rem;
+    }
+    .articulo-card p.descripcion {
+      font-size: 0.9rem;
+      color: #555;
+      margin-bottom: 8px;
+    }
+    .articulo-card .precio {
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .articulo-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .articulo-actions .cantidad {
+      width: 70px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+    }
+    .btn-agregar {
+      background: #ff7518;
+      color: #fff;
+      border: none;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Carrito lateral */
+    .carrito-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 360px;
+      max-width: 95vw;
+      height: 100vh;
+      background: #ffffff;
+      box-shadow: -12px 0 30px rgba(0,0,0,0.18);
+      transform: translateX(110%);
+      transition: transform .35s ease-in-out;
+      z-index: 9999;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+    }
+    .carrito-panel.open {
+      transform: translateX(0);
+    }
+    .carrito-header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      margin-bottom: 12px;
+    }
+    .carrito-lista {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+    .carrito-item {
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      padding: 8px 0;
+      border-bottom: 1px dashed #eee;
+    }
+    .carrito-item .meta {
+      flex:1;
+    }
+    .carrito-total {
+      margin-top: 12px;
+      font-weight: 800;
+      font-size: 1.05rem;
+      text-align: right;
+    }
+    .carrito-actions {
+      margin-top: 12px;
+      display:flex;
+      gap:8px;
+      justify-content: flex-end;
+    }
+    .btn-cerrar {
+      background: transparent;
+      border: 1px solid #ddd;
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .btn-accion {
+      background:#ff7518;
+      color:#fff;
+      border: none;
+      padding:8px 10px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:700;
+    }
+
+    /* pequeño ajuste para el boton de carrito dentro del header */
+    .nav-header .nav-btn#btnCarrito {
+      background: transparent;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+
+    /* responsive: que la sección articulos tenga separación */
+    @media (max-width: 640px) {
+      .articulo-card img { height: 120px; }
+      .carrito-panel { width: 92vw; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header-minimal">
+    <div class="header-content">
+      <a href="#" class="logo-link" id="logoInicio">
+        <img src="img/aa.png" alt="Talisto Logo" class="logo">
+        <div class="talisto-header-text">
+          <span class="talisto-nombre">Listop</span>
+          <span class="talisto-eslogan">"Lo pediste, esta listop"</span>
+        </div>
+      </a>
+      <nav class="nav-header">
+        <button class="nav-btn" id="btnInicio" style="display:none;">Inicio</button>
+        <button class="nav-btn" id="btnLocales">Comercios</button>
+        <button class="nav-btn" id="btnContacto">Contacto</button>
+        <button class="nav-btn" id="btnNosotros">Nosotros</button>
+        <!-- botón carrito: agregado pero discreto, no altera tu estructura general -->
+        <button class="nav-btn" id="btnCarrito" aria-label="Abrir mi lista">🛒 Mi lista</button>
+      </nav>
+      <button class="hamburger" id="hamburgerBtn" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobileMenu">
+        <span class="hamburger-bar"></span>
+        <span class="hamburger-bar"></span>
+        <span class="hamburger-bar"></span>
+      </button>
+      <div class="mobile-menu" id="mobileMenu" aria-hidden="true">
+        <button class="mobile-menu-close" id="closeMobileMenu" aria-label="Cerrar menú">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <a href="#" class="mobile-menu-link" id="mobileInicio">Inicio</a>
+        <a href="#" class="mobile-menu-link" id="mobileLocales">Comercios</a>
+        <a href="#" class="mobile-menu-link" id="mobileContacto">Contacto</a>
+        <a href="#" class="mobile-menu-link" id="mobileNosotros">Nosotros</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="welcome-section" id="welcomeSection">
+    <div class="welcome-content">
+      <div class="welcome-logo" id="welcomeLogo"></div>
+      <h1 class="welcome-title" id="welcomeTitle">Bienvenido a Listop</h1>
+      <p class="welcome-subtitle" id="welcomeSubtitle">"Lo pediste, esta Listop"</p>
+      <p class="welcome-description" id="welcomeDescription">Descubre comercios locales y encuentra lo que necesitas de forma rápida y directa</p>
+      <div class="welcome-arrow" id="welcomeArrow" style="display: none;">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto;">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+    </div>
+    <div class="welcome-background" id="welcomeBackground"></div>
+  </section>
+
+  <main id="mainContent">
+    <section class="comercios-destacados" id="comerciosSection">
+      <h2 class="titulo-destacado">Comercios</h2>
+      <div class="comercios-grid">
+        <div class="comercio-card" id="whmCard">
+          <div class="comercio-logo">
+            <img src="img/whmlogo.png" alt="Willian's House Market" class="comercio-logo-img">
+          </div>
+          <div class="comercio-nombre">Willian's House Market</div>
+        </div>
+        <div class="comercio-card" id="nefCard">
+          <div class="comercio-logo">
+            <img src="img/logonawaraeflow.png" alt="Nawara e' Flow" class="comercio-logo-img">
+          </div>
+          <div class="comercio-nombre">Nawara e' Flow</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- NUEVA SECCIÓN: artículos por comercio (mantiene estructura del sitio) -->
+    <section class="articulos-section" id="articulosSection" aria-hidden="true">
+      <h2 class="titulo-destacado" id="articulosTitulo">Artículos</h2>
+      <div class="articulos-grid" id="articulosGrid" aria-live="polite"></div>
+    </section>
+
+    <section id="contactoSection" class="contacto-section">
+      <div class="contacto-info">
+        <h2 class="titulo-destacado">Contacta con nosotros</h2>
+        <div class="contacto-iconos">
+          <div class="contacto-icon-link" onclick="copiarCorreoTalisto()" title="Copiar correo">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff7518" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
+            <span>info@talisto.com</span>
+          </div>
+          <a href="https://instagram.com/Listop" class="contacto-icon-link" target="_blank" title="Instagram">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff7518" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.5" y2="6.5"/></svg>
+            <span>@talisto</span>
+          </a>
+          <a href="https://wa.me/573108449367" class="contacto-icon-link" target="_blank" title="WhatsApp">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff7518" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <span>+57 3108449267</span>
+          </a>
+        </div>
+      </div>
+    </section>
+    <section id="catalogoSection" style="display:none;"></section>
+    <section id="nosotrosSection" class="nosotros-section" style="display:none;">
+      <div class="nosotros-info">
+        <p>Listop es una plataforma digital que conecta a usuarios con comercios locales de su zona de forma rápida, práctica y directa. Desde una web intuitiva, las personas pueden explorar catálogos de productos de distintos locales y hacer sus pedidos contactando a los negocios vía WhatsApp.</p>
+        <h3>Visión</h3>
+        <p>Convertirnos en la plataforma de referencia a nivel nacional para compras rápidas y directas, impulsando la digitalización de los comercios y haciendo que pedir lo que necesitas sea tan fácil como decir “Talisto”.</p>
+        <h3>Misión</h3>
+        <p>Facilitar el acceso inmediato a productos locales a través de una plataforma ágil, confiable y cercana, que conecte directamente a usuarios con comercios en su zona, promoviendo el consumo local y el delivery eficiente.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- PANEL LATERAL: Mi lista / carrito -->
+  <aside class="carrito-panel" id="carritoPanel" aria-hidden="true">
+    <div class="carrito-header">
+      <strong>Mi lista</strong>
+      <div>
+        <button class="btn-cerrar" id="vaciarCarritoBtn" title="Vaciar lista">Vaciar</button>
+        <button class="btn-cerrar" id="cerrarCarritoBtn" title="Cerrar">X</button>
+      </div>
+    </div>
+    <div class="carrito-lista" id="carritoItems" aria-live="polite"></div>
+    <div class="carrito-total" id="carritoTotal">Total: $0</div>
+    <div class="carrito-actions">
+      <button class="btn-accion" id="checkoutBtn">Contactar comercio</button>
+    </div>
+  </aside>
+
+  <footer class="footer-minimal">
+    <nav>
+      <a href="#">Comercios</a>
+      <a href="#">Contacto</a>
+      <a href="#">Nosotros</a>
+    </nav>
+    <div class="footer-copyright">
+      <p>© 2025 LISTOP - Todos los derechos reservados</p>
+    </div>
+  </footer>
+
+  <!-- Conservé tu main.js (si tienes lógica ahí) y añado el script de la funcionalidad nueva después -->
+  <script src="main.js"></script>
+
+  <script>
+    /* ========= Datos de ejemplo por comercio (cada comercio con productos distintos) ========= */
+    const articulos = {
+  whm: [
+    { nombre: "Manzanas", descripcion: "Frescas y deliciosas", precio: 3000 },
+    { nombre: "Leche", descripcion: "Entera 1L", precio: 4000 },
+    { nombre: "Pan", descripcion: "Pan artesanal recién horneado", precio: 2500 },
+    { nombre: "Huevos", descripcion: "Cubeta de 30 unidades", precio: 12000 },
+    { nombre: "Arroz", descripcion: "Bolsa de 5kg de arroz premium", precio: 18000 },
+    { nombre: "Aceite", descripcion: "Botella de 1L de aceite vegetal", precio: 9500 },
+    { nombre: "Azúcar", descripcion: "Paquete de 2kg de azúcar refinada", precio: 7800 },
+    { nombre: "Café", descripcion: "500g de café colombiano molido", precio: 15000 }
+  ],
+  nef: [
+    { nombre: "Camisa Flow", descripcion: "Camisa urbana de algodón", precio: 50000 },
+    { nombre: "Gorra", descripcion: "Gorra ajustable edición limitada", precio: 25000 },
+    { nombre: "Cadena", descripcion: "Cadena dorada estilo urbano", precio: 70000 },
+    { nombre: "Tenis Urbanos", descripcion: "Zapatillas deportivas casuales", precio: 120000 },
+    { nombre: "Chaqueta Street", descripcion: "Chaqueta impermeable estilo urbano", precio: 180000 },
+    { nombre: "Pantalón Cargo", descripcion: "Pantalón cargo con bolsillos amplios", precio: 95000 },
+    { nombre: "Reloj", descripcion: "Reloj digital con correa de cuero", precio: 220000 }
+  ]
+};
+   
+        
+      const PRODUCTOS_POR_COMERCIO = {
+  whm: [
+    { id: 1, nombre: "Manzanas", descripcion: "Frescas y deliciosas", precio: 3000, imagen: "img/manzanas.jpg" },
+    { id: 2, nombre: "Leche", descripcion: "Entera 1L", precio: 4000, imagen: "img/leche.jpg" },
+    { id: 3, nombre: "Pan", descripcion: "Pan artesanal recién horneado", precio: 2500, imagen: "img/pan.jpg" },
+    { id: 4, nombre: "Huevos", descripcion: "Cubeta de 30 unidades", precio: 12000, imagen: "img/huevos.jpg" }
+  ],
+  nef: [
+    { id: 5, nombre: "Camisa Flow", descripcion: "Camisa urbana de algodón", precio: 50000, imagen: "img/camisa.jpg" },
+    { id: 6, nombre: "Gorra", descripcion: "Gorra ajustable edición limitada", precio: 25000, imagen: "img/gorra.jpg" },
+    { id: 7, nombre: "Cadena", descripcion: "Cadena dorada estilo urbano", precio: 70000, imagen: "img/cadena.jpg" }
+  ]
+};
+
+      nefCard: {
+        id: 'nef',
+        nombre: "Nawara e' Flow",
+        productos: [
+          {
+            id: 'nef-camisa',
+            nombre: 'Camisa Flow',
+            descripcion: 'Camiseta algodón con estampado exclusivo - tallas S, M, L.',
+            precio: 50000,
+            img: 'img/product-camisa.jpg'
+          },
+          {
+            id: 'nef-gorra',
+            nombre: 'Gorra Street',
+            descripcion: 'Gorra con visera curva y logo bordado.',
+            precio: 25000,
+            img: 'img/product-gorra.jpg'
+          },
+          {
+            id: 'nef-cadena',
+            nombre: 'Cadena Urbana',
+            descripcion: 'Cadena metálica estilo urbano, acabado brillante.',
+            precio: 70000,
+            img: 'img/product-cadena.jpg'
+          }
+        ]
+      }
+    
+
+    /* ======= Manejo del carrito (persistente por localStorage) ======= */
+    const STORAGE_KEY = 'listop_cart_v1';
+    let carrito = [];
+
+    function guardarCarrito() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(carrito));
+      } catch(e) { console.warn('no se pudo guardar localStorage', e); }
+    }
+    function cargarCarrito() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) carrito = JSON.parse(raw) || [];
+      } catch(e) { carrito = []; }
+    }
+
+    function sumarTotal() {
+      return carrito.reduce((s, it) => s + (it.precio * it.cantidad), 0);
+    }
+
+    function renderCarrito() {
+      const cont = document.getElementById('carritoItems');
+      const totalEl = document.getElementById('carritoTotal');
+      cont.innerHTML = '';
+      if (carrito.length === 0) {
+        cont.innerHTML = '<p style="color:#666">Tu lista está vacía.</p>';
+      } else {
+        carrito.forEach((item, idx) => {
+          const div = document.createElement('div');
+          div.className = 'carrito-item';
+          div.innerHTML = `
+            <div class="meta">
+              <div style="font-weight:700">${escapeHtml(item.nombre)}</div>
+              <div style="font-size:0.9rem;color:#666">${escapeHtml(item.comercioNombre)}</div>
+            </div>
+            <div style="text-align:right; min-width:90px;">
+              <div>$${formatNumber(item.precio)}</div>
+              <div style="margin-top:6px; display:flex; gap:6px; justify-content:flex-end; align-items:center;">
+                <input type="number" min="1" style="width:56px; padding:4px; border-radius:6px; border:1px solid #ddd;" value="${item.cantidad}" data-index="${idx}" class="carrito-cantidad">
+                <button data-index="${idx}" class="btn-cerrar" style="padding:6px 8px; border-radius:8px;">Eliminar</button>
+              </div>
+            </div>
+          `;
+          cont.appendChild(div);
+        });
+      }
+      totalEl.textContent = 'Total: $' + formatNumber(sumarTotal());
+
+      // listeners para inputs de cantidad y eliminar
+      document.querySelectorAll('.carrito-cantidad').forEach(input => {
+        input.addEventListener('change', (e) => {
+          const i = Number(e.target.dataset.index);
+          const val = Math.max(1, parseInt(e.target.value || 1, 10));
+          carrito[i].cantidad = val;
+          guardarCarrito();
+          renderCarrito();
+        });
+      });
+      document.querySelectorAll('.carrito-item .btn-cerrar').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const i = Number(btn.dataset.index);
+          carrito.splice(i, 1);
+          guardarCarrito();
+          renderCarrito();
+        });
+      });
+    }
+
+    function agregarAlCarrito(producto, cantidad, comercioNombre) {
+      const existente = carrito.find(p => p.id === producto.id);
+      if (existente) {
+        existente.cantidad += cantidad;
+      } else {
+        carrito.push({
+          id: producto.id,
+          nombre: producto.nombre,
+          precio: producto.precio,
+          cantidad,
+          comercioNombre
+        });
+      }
+      guardarCarrito();
+      renderCarrito();
+      abrirCarrito();
+    }
+
+    function vaciarCarrito() {
+      carrito = [];
+      guardarCarrito();
+      renderCarrito();
+    }
+
+    /* ======= Mostrar productos para un comercio ======= */
+    function mostrarArticulosPorCardId(cardId) {
+      const info = PRODUCTOS_POR_COMERCIO[cardId];
+      if (!info) return;
+      const grid = document.getElementById('articulosGrid');
+      const section = document.getElementById('articulosSection');
+      const titulo = document.getElementById('articulosTitulo');
+      grid.innerHTML = '';
+      titulo.textContent = 'Artículos de ' + info.nombre;
+
+      info.productos.forEach((p, i) => {
+        const card = document.createElement('article');
+        card.className = 'articulo-card';
+        // delay progresivo para el efecto
+        card.style.animationDelay = (i * 80) + 'ms';
+        // imagen: si no existe archivo, se mostrará área vacía con fondo
+        const imgHtml = `<img src="${p.img}" alt="${escapeHtml(p.nombre)}" onerror="this.style.display='none'">`;
+        card.innerHTML = `
+          ${imgHtml}
+          <h3>${escapeHtml(p.nombre)}</h3>
+          <p class="descripcion">${escapeHtml(p.descripcion)}</p>
+          <div class="precio">Precio: $${formatNumber(p.precio)}</div>
+          <div class="articulo-actions">
+            <input type="number" min="1" value="1" class="cantidad cantidad-${i}" aria-label="Cantidad ${escapeHtml(p.nombre)}">
+            <button class="btn-agregar" data-product="${p.id}">Agregar</button>
+          </div>
+        `;
+        grid.appendChild(card);
+
+        // botón agregar
+        card.querySelector('.btn-agregar').addEventListener('click', () => {
+          const cantidadInput = card.querySelector('.cantidad');
+          const cantidad = Math.max(1, parseInt(cantidadInput.value || 1, 10));
+          agregarAlCarrito(p, cantidad, info.nombre);
+        });
+      });
+
+      // mostrar sección con animación
+      section.classList.add('show');
+      section.setAttribute('aria-hidden', 'false');
+      // desplazarse levemente a la sección de artículos si la pantalla es pequeña
+      setTimeout(() => {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 120);
+    }
+
+    /* ======= Carrito panel control ======= */
+    function abrirCarrito() {
+      document.getElementById('carritoPanel').classList.add('open');
+      document.getElementById('carritoPanel').setAttribute('aria-hidden', 'false');
+    }
+    function cerrarCarrito() {
+      document.getElementById('carritoPanel').classList.remove('open');
+      document.getElementById('carritoPanel').setAttribute('aria-hidden', 'true');
+    }
+
+    /* ======= utilidades ======= */
+    function formatNumber(n) {
+      return Number(n).toLocaleString('es-CO');
+    }
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    /* ======= inicialización: enganchar eventos a tus cards existentes ======= */
+    document.addEventListener('DOMContentLoaded', () => {
+      // cargar carrito guardado
+      cargarCarrito();
+      renderCarrito();
+
+      // asignar click a las comercio-cards por id (si existen en el DOM)
+      Object.keys(PRODUCTOS_POR_COMERCIO).forEach(cardId => {
+        const el = document.getElementById(cardId);
+        if (el) {
+          el.style.cursor = 'pointer';
+          el.addEventListener('click', () => mostrarArticulosPorCardId(cardId));
+        }
+      });
+
+      // boton abrir carrito
+      const btnCarrito = document.getElementById('btnCarrito');
+      if (btnCarrito) btnCarrito.addEventListener('click', abrirCarrito);
+
+      // botones del panel carrito
+      document.getElementById('cerrarCarritoBtn').addEventListener('click', cerrarCarrito);
+      document.getElementById('vaciarCarritoBtn').addEventListener('click', () => {
+        if (confirm('¿Vaciar la lista?')) {
+          vaciarCarrito();
+        }
+      });
+      document.getElementById('checkoutBtn').addEventListener('click', () => {
+        // ejemplo de comportamiento: construir mensaje para whatsapp con lista y abrir whatsapp
+        if (carrito.length === 0) {
+          alert('Tu lista está vacía.');
+          return;
+        }
+        const lines = carrito.map(it => `${it.cantidad} x ${it.nombre} ($${formatNumber(it.precio)})`);
+        const total = formatNumber(sumarTotal());
+        const text = `Hola, deseo hacer un pedido:\n${lines.join('\n')}\nTotal: $${total}`;
+        // reemplazar espacios para URL encode
+        const encoded = encodeURIComponent(text);
+        // número ejemplo - puedes cambiar por el del comercio o un flow central
+        const phone = '573108449367';
+        window.open(`https://wa.me/${phone}?text=${encoded}`, '_blank');
+      });
+
+      // cerrar carrito al clickear fuera (opcional, si quieres)
+      document.addEventListener('click', (e) => {
+        const panel = document.getElementById('carritoPanel');
+        const isOpen = panel.classList.contains('open');
+        if (!isOpen) return;
+        const target = e.target;
+        const inside = panel.contains(target) || (document.getElementById('btnCarrito') && document.getElementById('btnCarrito').contains(target));
+        // si clic fuera del panel y fuera del boton, cerrar
+        if (!inside && !target.closest('.carrito-panel')) {
+          cerrarCarrito();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
