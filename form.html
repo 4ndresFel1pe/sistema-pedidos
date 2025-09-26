@@ -58,13 +58,18 @@
 </table>
 
 <script>
-let pedidos = [];
-let editando = false;
-
 const form = document.getElementById('pedidoForm');
 const tabla = document.getElementById('tablaPedidos').querySelector('tbody');
 
-function renderTabla() {
+// 🚀 Cargar pedidos desde la base de datos
+async function cargarPedidos() {
+  const res = await fetch('../backend/pedidos.php?read');
+  const data = await res.json();
+  renderTabla(data);
+}
+
+// 🚀 Mostrar pedidos en la tabla
+function renderTabla(pedidos) {
   tabla.innerHTML = '';
   pedidos.forEach(p => {
     const row = document.createElement('tr');
@@ -73,10 +78,10 @@ function renderTabla() {
       <td>${p.cliente}</td>
       <td>${p.producto}</td>
       <td>${p.cantidad}</td>
-      <td>${p.precio.toFixed(2)}</td>
+      <td>${parseFloat(p.precio).toFixed(2)}</td>
       <td>${p.fecha}</td>
       <td>
-        <button class="btn-edit" onclick="editarPedido(${p.id})">Editar</button>
+        <button class="btn-edit" onclick="editarPedido(${p.id}, '${p.cliente}', '${p.producto}', ${p.cantidad}, ${p.precio}, '${p.fecha}')">Editar</button>
         <button class="btn-delete" onclick="eliminarPedido(${p.id})">Eliminar</button>
       </td>
     `;
@@ -84,59 +89,50 @@ function renderTabla() {
   });
 }
 
-function resetForm() {
+// 🚀 Guardar (crear o actualizar)
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('pedidoId').value;
+  const formData = new FormData(form);
+  
+  if (id) {
+    formData.append('update', true);
+    formData.append('id', id);
+  } else {
+    formData.append('create', true);
+  }
+
+  await fetch('../backend/pedidos.php', { method: 'POST', body: formData });
   form.reset();
   document.getElementById('pedidoId').value = '';
-  editando = false;
   document.getElementById('btnGuardar').textContent = 'Guardar Pedido';
-}
-
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
-  const idInput = document.getElementById('pedidoId').value;
-  const cliente = document.getElementById('cliente').value;
-  const producto = document.getElementById('producto').value;
-  const cantidad = parseInt(document.getElementById('cantidad').value);
-  const precio = parseFloat(document.getElementById('precio').value);
-  const fecha = document.getElementById('fecha').value;
-
-  if (editando) {
-    const pedido = pedidos.find(p => p.id == idInput);
-    pedido.cliente = cliente;
-    pedido.producto = producto;
-    pedido.cantidad = cantidad;
-    pedido.precio = precio;
-    pedido.fecha = fecha;
-  } else {
-    const id = pedidos.length ? pedidos[pedidos.length-1].id + 1 : 1;
-    pedidos.push({id, cliente, producto, cantidad, precio, fecha});
-  }
-
-  renderTabla();
-  resetForm();
+  cargarPedidos();
 });
 
-function eliminarPedido(id) {
-  if(confirm('¿Eliminar este pedido?')) {
-    pedidos = pedidos.filter(p => p.id !== id);
-    renderTabla();
+// 🚀 Eliminar
+async function eliminarPedido(id) {
+  if (confirm("¿Eliminar este pedido?")) {
+    const formData = new FormData();
+    formData.append('delete', true);
+    formData.append('id', id);
+    await fetch('../backend/pedidos.php', { method: 'POST', body: formData });
+    cargarPedidos();
   }
 }
 
-function editarPedido(id) {
-  const pedido = pedidos.find(p => p.id === id);
-  document.getElementById('pedidoId').value = pedido.id;
-  document.getElementById('cliente').value = pedido.cliente;
-  document.getElementById('producto').value = pedido.producto;
-  document.getElementById('cantidad').value = pedido.cantidad;
-  document.getElementById('precio').value = pedido.precio;
-  document.getElementById('fecha').value = pedido.fecha;
-  editando = true;
+// 🚀 Editar
+function editarPedido(id, cliente, producto, cantidad, precio, fecha) {
+  document.getElementById('pedidoId').value = id;
+  document.getElementById('cliente').value = cliente;
+  document.getElementById('producto').value = producto;
+  document.getElementById('cantidad').value = cantidad;
+  document.getElementById('precio').value = precio;
+  document.getElementById('fecha').value = fecha;
   document.getElementById('btnGuardar').textContent = 'Actualizar Pedido';
 }
 
-// Inicial
-renderTabla();
+// 🚀 Inicial
+cargarPedidos();
 </script>
 </body>
 </html>
