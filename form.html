@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lista de Pedidos</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; background:#f5f5f5; }
+  h1 { color: #ff7518; }
+  table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; border-radius:10px; overflow:hidden;}
+  th, td { border: 1px solid #ddd; padding: 10px; text-align:center; }
+  th { background: #ff7518; color: #fff; }
+  button { padding:5px 10px; margin:2px; border:none; border-radius:5px; cursor:pointer; }
+  .btn-add { background: #28a745; color:#fff; }
+  .btn-edit { background:#ffc107; color:#000; }
+  .btn-delete { background:#dc3545; color:#fff; }
+  .form-container { background:#fff; padding:20px; border-radius:10px; margin-top:20px; }
+  .form-container input { padding:6px; margin:5px 0; width:100%; border-radius:5px; border:1px solid #ccc; }
+</style>
+</head>
+<body>
+
+<h1>Lista de Pedidos</h1>
+
+<div class="form-container">
+  <h3>Crear / Editar Pedido</h3>
+  <form id="pedidoForm">
+    <input type="hidden" id="pedidoId">
+    <label>Cliente:</label>
+    <input type="text" id="cliente" required>
+    <label>Producto:</label>
+    <input type="text" id="producto" required>
+    <label>Cantidad:</label>
+    <input type="number" id="cantidad" min="1" required>
+    <label>Precio:</label>
+    <input type="number" id="precio" min="0" step="0.01" required>
+    <label>Fecha:</label>
+    <input type="date" id="fecha" required>
+    <button type="submit" class="btn-add" id="btnGuardar">Guardar Pedido</button>
+  </form>
+</div>
+
+<table id="tablaPedidos">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Cliente</th>
+      <th>Producto</th>
+      <th>Cantidad</th>
+      <th>Precio</th>
+      <th>Fecha</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- Pedidos se insertan aquí -->
+  </tbody>
+</table>
+
+<script>
+let pedidos = [];
+let editando = false;
+
+const form = document.getElementById('pedidoForm');
+const tabla = document.getElementById('tablaPedidos').querySelector('tbody');
+
+function renderTabla() {
+  tabla.innerHTML = '';
+  pedidos.forEach(p => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${p.id}</td>
+      <td>${p.cliente}</td>
+      <td>${p.producto}</td>
+      <td>${p.cantidad}</td>
+      <td>${p.precio.toFixed(2)}</td>
+      <td>${p.fecha}</td>
+      <td>
+        <button class="btn-edit" onclick="editarPedido(${p.id})">Editar</button>
+        <button class="btn-delete" onclick="eliminarPedido(${p.id})">Eliminar</button>
+      </td>
+    `;
+    tabla.appendChild(row);
+  });
+}
+
+function resetForm() {
+  form.reset();
+  document.getElementById('pedidoId').value = '';
+  editando = false;
+  document.getElementById('btnGuardar').textContent = 'Guardar Pedido';
+}
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  const idInput = document.getElementById('pedidoId').value;
+  const cliente = document.getElementById('cliente').value;
+  const producto = document.getElementById('producto').value;
+  const cantidad = parseInt(document.getElementById('cantidad').value);
+  const precio = parseFloat(document.getElementById('precio').value);
+  const fecha = document.getElementById('fecha').value;
+
+  if (editando) {
+    const pedido = pedidos.find(p => p.id == idInput);
+    pedido.cliente = cliente;
+    pedido.producto = producto;
+    pedido.cantidad = cantidad;
+    pedido.precio = precio;
+    pedido.fecha = fecha;
+  } else {
+    const id = pedidos.length ? pedidos[pedidos.length-1].id + 1 : 1;
+    pedidos.push({id, cliente, producto, cantidad, precio, fecha});
+  }
+
+  renderTabla();
+  resetForm();
+});
+
+function eliminarPedido(id) {
+  if(confirm('¿Eliminar este pedido?')) {
+    pedidos = pedidos.filter(p => p.id !== id);
+    renderTabla();
+  }
+}
+
+function editarPedido(id) {
+  const pedido = pedidos.find(p => p.id === id);
+  document.getElementById('pedidoId').value = pedido.id;
+  document.getElementById('cliente').value = pedido.cliente;
+  document.getElementById('producto').value = pedido.producto;
+  document.getElementById('cantidad').value = pedido.cantidad;
+  document.getElementById('precio').value = pedido.precio;
+  document.getElementById('fecha').value = pedido.fecha;
+  editando = true;
+  document.getElementById('btnGuardar').textContent = 'Actualizar Pedido';
+}
+
+// Inicial
+renderTabla();
+</script>
+</body>
+</html>
